@@ -2,7 +2,7 @@
 #  main.jl
 # Author: Hakan Ergun 24.03.2022
 # Script to solve the hourly ecomic dispatch problem for the TYNDP 
-# reference grid based on NTC and provided genreation capacities
+# reference grid based on NTC and provided generation capacities
 # RES and demand time series
 #######################################
 
@@ -18,6 +18,7 @@ import Gurobi
 import Feather
 import PowerModels; const _PM = PowerModels
 import JSON
+using Plots
 using EU_grid_operations; const _EUGO = EU_grid_operations
 gurobi = JuMP.optimizer_with_attributes(Gurobi.Optimizer, "OutputFlag" => 0)
 
@@ -31,10 +32,12 @@ gurobi = JuMP.optimizer_with_attributes(Gurobi.Optimizer, "OutputFlag" => 0)
 # Number of hours: 1 - 8760
 # Fetch data: true/false, to parse input data (takes ~ 1 min.)
 
-scenario = "GA2030"
-climate_year = "2007"
+scenario = "NT2025"
+climate_year = "1984"
 fetch_data = true
-number_of_hours = 8760
+
+start_hour = 1
+number_of_hours = 168
 
 # Load grid and scenario data
 if fetch_data == true
@@ -55,8 +58,8 @@ print("######################################", "\n")
 
 # Create dictionary for writing out results
 result = Dict{String, Any}("$hour" => nothing for hour in 1:number_of_hours)
-for hour = 1:number_of_hours
-    print("Hour ", hour, " of ", number_of_hours, "\n")
+for hour = start_hour:(start_hour+number_of_hours-1)
+    print("Hour ", hour, " of ", start_hour+number_of_hours-1, "\n")
     # Write time series data into input data dictionary
     _EUGO.prepare_hourly_data!(input_data, nodal_data, hour)
     # Solve Network Flow OPF using PowerModels
@@ -84,3 +87,18 @@ json_string = JSON.json(nodal_data)
 open(scenario_file_name,"w") do f
   JSON.print(f, json_string)
 end
+
+#Generating a plot
+
+using Plots
+gen = []
+for i in start_hour:(start_hour+number_of_hours-1)
+    if !isnan(result["$i"]["objective"])
+    push!(gen,result["$i"]["solution"]["gen"]["1085"]["pg"])
+    end
+end
+p=plot(gen)
+Plots.xlabel!("Hour of the day")
+Plots.ylabel!("Active power")
+#file = "./results/result_zonal_tyndp_", scenario,"_", climate_year
+#Plots.savefig(p, file)

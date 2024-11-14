@@ -37,7 +37,7 @@ gurobi = JuMP.optimizer_with_attributes(Gurobi.Optimizer)
 scenario = "GA2040"
 climate_year = "1984"
 fetch_data = true
-hours = 1:24
+hours = 1:1000
 
 # Load grid and scenario data
 if fetch_data == true
@@ -88,9 +88,9 @@ end
 Plots.plot(cap')
 
 
-# for (b, branch) in input_data["branch"]
-#     print(b, " ", abs(result["1"]["solution"]["branch"][b]["pf"]) / branch["rate_a"], "\n")
-# end
+for (b, branch) in input_data["branch"]
+     print(b, " ", abs(result["solution"]["nw"]["23"]["branch"][b]["pf"]) / branch["rate_a"], "\n")
+end
 
 # ## Write out JSON files
 # # Result file, with hourly results
